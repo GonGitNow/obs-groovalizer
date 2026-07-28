@@ -1,0 +1,100 @@
+[preset00]
+fRating=5.000000
+fGammaAdj=1.200000
+fDecay=0.960000
+fVideoEchoZoom=1.020000
+fVideoEchoAlpha=0.400000
+nVideoEchoOrientation=3
+nWaveMode=0
+bAdditiveWaves=1
+bWaveDots=0
+bWaveThick=1
+bModWaveAlphaByVolume=0
+bMaximizeWaveColor=1
+bTexWrap=1
+bDarkenCenter=0
+bRedBlueStereo=0
+bBrighten=0
+bDarken=0
+bSolarize=0
+bInvert=0
+fWaveAlpha=0.700000
+fWaveScale=1.200000
+fWaveSmoothing=0.500000
+fWaveParam=0.000000
+fModWaveAlphaStart=0.750000
+fModWaveAlphaEnd=0.950000
+fWarpAnimSpeed=0.800000
+fWarpScale=2.500000
+fZoomExponent=1.000000
+fShader=0.000000
+zoom=1.000000
+rot=0.000000
+cx=0.500000
+cy=0.500000
+dx=0.000000
+dy=0.000000
+warp=1.500000
+sx=1.000000
+sy=1.000000
+wave_r=0.900000
+wave_g=0.200000
+wave_b=0.800000
+wave_x=0.500000
+wave_y=0.500000
+ob_size=0.008000
+ob_r=0.200000
+ob_g=0.000000
+ob_b=0.400000
+ob_a=0.500000
+ib_size=0.005000
+ib_r=0.100000
+ib_g=0.000000
+ib_b=0.300000
+ib_a=0.300000
+nMotionVectorsX=0.000000
+nMotionVectorsY=0.000000
+mv_dx=0.000000
+mv_dy=0.000000
+mv_l=1.000000
+mv_r=1.000000
+mv_g=1.000000
+mv_b=1.000000
+mv_a=0.000000
+b1n=0.000000
+b1x=1.000000
+b2n=0.000000
+b2x=1.000000
+b3n=0.000000
+b3x=1.000000
+b1ed=0.250000
+per_frame_init_1=sb = 1; sm = 1; st = 1; be = 0; lb = 0; th = 1.4;
+per_frame_init_2=pr = 0; pg = 0; pb = 0; energy = 0;
+per_frame_1=sb = sb * 0.82 + bass * 0.18;
+per_frame_2=sm = sm * 0.85 + mid * 0.15;
+per_frame_3=st = st * 0.85 + treb * 0.15;
+per_frame_4=vol = (bass + mid + treb) / 3;
+per_frame_5=beat = above(bass, th) * above(time - lb, 0.18);
+per_frame_6=lb = if(beat, time, lb);
+per_frame_7=th = if(beat, bass + 0.35, th * 0.996 + 1.35 * 0.004);
+per_frame_8=be = be * 0.90 + beat * 0.7;
+per_frame_9=energy = energy * 0.97 + vol * 0.03;
+per_frame_10=pr = pr + 0.008 + be * 0.02;
+per_frame_11=pg = pg + 0.011 + be * 0.025;
+per_frame_12=pb = pb + 0.015 + be * 0.03;
+per_frame_13=wave_r = 0.5 + 0.5 * sin(pr * 6.28);
+per_frame_14=wave_g = 0.5 + 0.5 * sin(pg * 6.28);
+per_frame_15=wave_b = 0.5 + 0.5 * sin(pb * 6.28);
+per_frame_16=zoom = 1.005 + 0.008 * sm;
+per_frame_17=rot = 0.005 + 0.003 * sin(time * 0.3) + be * 0.01;
+per_frame_18=warp = 1.2 + 0.8 * sm + be * 0.3;
+per_frame_19=decay = 0.95 + 0.04 * min(1, vol * 0.5);
+per_frame_20=ob_r = 0.3 + 0.3 * sin(pr * 6.28 + 1.0);
+per_frame_21=ob_g = 0.3 + 0.3 * sin(pg * 6.28 + 1.0);
+per_frame_22=ob_b = 0.3 + 0.3 * sin(pb * 6.28 + 1.0);
+per_frame_23=dx = 0.002 * sin(time * 0.12);
+per_frame_24=dy = 0.002 * cos(time * 0.10);
+per_frame_25=q1 = sb; q2 = sm; q3 = st; q4 = be; q5 = pr; q6 = pg; q7 = pb; q8 = energy;
+per_pixel_1=zoom = zoom + 0.04 * sin(ang * 5 + time * 0.2) * rad;
+per_pixel_2=rot = rot + 0.04 * sin(ang * 3) * rad * (1 - rad);
+per_pixel_3=warp = warp + 0.5 * sin(ang * 7 + time * 0.15) * rad;

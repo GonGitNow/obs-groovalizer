@@ -1,0 +1,201 @@
+// GrooveCore post chain for OBS. Mirrors post.frag (GLES) and Post.metal — the
+// three must stay in step so a clip rendered in OBS matches one from a phone.
+//
+// Five techniques rather than one uniform-branched shader: OBS drives each pass
+// through gs_effect_loop() by name, which is the idiomatic shape here.
+//
+// Reconstructed after this file was deleted by an over-broad cleanup of stale
+// generated shaders — it is hand-written, not generated, and there was no copy.
+// The maths below is transcribed from post.frag pass by pass.
+
+uniform float4x4 ViewProj;
+
+uniform texture2d gScene;
+uniform texture2d gPrev;
+uniform texture2d gBloom;
+
+uniform float  pTrail;
+uniform float  pBloomAmount;
+uniform float  pHueShift;
+uniform float  pSaturation;
+uniform float  pBrightness;
+uniform float  pContrast;
+uniform float  pVignette;
+uniform float  pThreshold;
+uniform float2 pTexel;
+
+// Overlay controls. pAlphaMode 0 = opaque, 1 = derive alpha from luminance so
+// the black a scene sits on becomes genuinely transparent rather than black.
+// These belong to the Present technique only — libobs sizes parameters per
+// compiled technique, so they must be set while Present is active.
+uniform float  pOpacity;
+uniform float  pAlphaMode;
+uniform float  pAlphaGain;
+// Black point. Most scenes add a deliberate ambient floor so a quiet passage
+// fades to embers rather than to nothing — good as a background, fatal as an
+// overlay, because it gives every pixel some luminance and nothing ever keys
+// fully transparent. This subtracts that floor before the key.
+uniform float  pAlphaFloor;
+
+// Exposure, applied BEFORE the tone map. This is the control that actually
+// makes an overlay bright. pBrightness runs after tonemap(), by which point the
+// filmic curve has compressed everything into 0..1 and clipped the highlights —
+// lifting there only washes the image toward grey. Scenes return linear HDR
+// well above 1.0 on purpose, and this is what decides how much of that range
+// lands in the visible part of the curve.
+uniform float  pExposure;
+
+sampler_state linearClamp {
+    Filter    = Linear;
+    AddressU  = Clamp;
+    AddressV  = Clamp;
+};
+
+struct VertData {
+    float4 pos : POSITION;
+    float2 uv  : TEXCOORD0;
+};
+
+VertData VSDefault(VertData v)
+{
+    VertData o;
+    o.pos = mul(float4(v.pos.xyz, 1.0), ViewProj);
+    o.uv  = v.uv;
+    return o;
+}
+
+float3 rgb2hsv(float3 c)
+{
+    float4 K = float4(0.0, -0.3333333, 0.6666667, -1.0);
+    float4 p = lerp(float4(c.b, c.g, K.w, K.z), float4(c.g, c.b, K.x, K.y), step(c.b, c.g));
+    float4 q = lerp(float4(p.x, p.y, p.w, c.r), float4(c.r, p.y, p.z, p.x), step(p.x, c.r));
+    float d = q.x - min(q.w, q.y);
+    float e = 1.0e-10;
+    return float3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+}
+
+float3 hsv2rgb(float3 c)
+{
+    float4 K = float4(1.0, 0.6666667, 0.3333333, 3.0);
+    float3 p = abs(frac(float3(c.x, c.x, c.x) + K.xyz) * 6.0 - K.www);
+    return c.z * lerp(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+}
+
+// ACES-inspired filmic curve. Scenes return values above 1.0 on purpose so the
+// bright pass has headroom; a hard clamp would flatten every highlight to white.
+float3 tonemap(float3 x)
+{
+    float3 a = x * (x * 2.51 + 0.03);
+    float3 b = x * (x * 2.43 + 0.59) + 0.14;
+    return clamp(a / b, 0.0, 1.0);
+}
+
+// sRGB transfer function, applied here rather than by the framebuffer. None of
+// the native hosts ever enabled an sRGB target, so linear values went straight
+// to displays that interpret them as sRGB and everything shipped darker than
+// the maths intended. Doing it in the shader is identical on every platform.
+float3 encodeSRGB(float3 c)
+{
+    c = clamp(c, 0.0, 1.0);
+    float3 lo = c * 12.92;
+    float3 hi = 1.055 * pow(c, float3(1.0 / 2.4, 1.0 / 2.4, 1.0 / 2.4)) - 0.055;
+    return lerp(hi, lo, step(c, float3(0.0031308, 0.0031308, 0.0031308)));
+}
+
+// Unrolled rather than looped over a local array: OBS's effect parser does not
+// accept indexing into one.
+float3 blur9(float2 uv, float2 dir)
+{
+    float w0 = 0.2270270, w1 = 0.1945946, w2 = 0.1216216, w3 = 0.0540541, w4 = 0.0162162;
+    float3 sum = gScene.Sample(linearClamp, uv).rgb * w0;
+    sum += (gScene.Sample(linearClamp, uv + dir * 1.0).rgb +
+            gScene.Sample(linearClamp, uv - dir * 1.0).rgb) * w1;
+    sum += (gScene.Sample(linearClamp, uv + dir * 2.0).rgb +
+            gScene.Sample(linearClamp, uv - dir * 2.0).rgb) * w2;
+    sum += (gScene.Sample(linearClamp, uv + dir * 3.0).rgb +
+            gScene.Sample(linearClamp, uv - dir * 3.0).rgb) * w3;
+    sum += (gScene.Sample(linearClamp, uv + dir * 4.0).rgb +
+            gScene.Sample(linearClamp, uv - dir * 4.0).rgb) * w4;
+    return sum;
+}
+
+float4 PSBright(VertData v) : TARGET
+{
+    float3 c = gScene.Sample(linearClamp, v.uv).rgb;
+    float luma = dot(c, float3(0.2126, 0.7152, 0.0722));
+    float k = clamp((luma - pThreshold) / max(1.0 - pThreshold, 0.001), 0.0, 1.0);
+    return float4(c * k, 1.0);
+}
+
+float4 PSBlurH(VertData v) : TARGET
+{
+    return float4(blur9(v.uv, float2(pTexel.x, 0.0)), 1.0);
+}
+
+float4 PSBlurV(VertData v) : TARGET
+{
+    return float4(blur9(v.uv, float2(0.0, pTexel.y)), 1.0);
+}
+
+// Trails + bloom, LINEAR HDR, deliberately ungraded.
+//
+// This output feeds back in as gPrev next frame, so anything applied here
+// compounds: tone mapping and contrast applied 180 times converge on the fixed
+// point of that operator, which is a flat mid-grey blob over the middle of the
+// screen. Grading belongs in Present only.
+float4 PSComposite(VertData v) : TARGET
+{
+    float3 col = gScene.Sample(linearClamp, v.uv).rgb;
+    col += gBloom.Sample(linearClamp, v.uv).rgb * pBloomAmount;
+
+    float3 old = gPrev.Sample(linearClamp, v.uv).rgb;
+
+    // Max-blend trails. Lerp averages toward grey and kills the neon look.
+    // trail = 0 must mean OFF; an earlier mapping had a 55% floor, so the
+    // Trails slider at zero still smeared.
+    float trailDecay = pTrail <= 0.001 ? 0.0 : (0.45 + pTrail * 0.54);
+    col = max(col, old * trailDecay);
+
+    return float4(col, 1.0);
+}
+
+float4 PSPresent(VertData v) : TARGET
+{
+    float3 col = tonemap(gScene.Sample(linearClamp, v.uv).rgb * max(pExposure, 0.0));
+
+    float3 hsv = rgb2hsv(col);
+    hsv.x = frac(hsv.x + pHueShift / 360.0);
+    hsv.y = clamp(hsv.y * pSaturation, 0.0, 1.0);
+    hsv.z = clamp(hsv.z * pBrightness, 0.0, 1.0);
+    col = hsv2rgb(hsv);
+
+    col = clamp((col - 0.5) * pContrast + 0.5, 0.0, 1.0);
+
+    float2 uvC = v.uv * 2.0 - 1.0;
+    float vig = smoothstep(1.45, 0.35, length(uvC));
+    col *= lerp(1.0, vig, pVignette);
+
+    // Alpha from perceived luminance, measured BEFORE the sRGB encode: the
+    // encode lifts dark values steeply, so keying off the encoded value would
+    // make near-black areas noticeably opaque.
+    float luma = dot(col, float3(0.2126, 0.7152, 0.0722));
+    float key = saturate((luma - pAlphaFloor) * pAlphaGain);
+
+    // Un-premultiply. OBS composites straight alpha:
+    //     out = rgb * a + background * (1 - a)
+    // so returning the colour unchanged multiplies it by its own luminance a
+    // second time — a pixel at luma 0.15 lands near 0.045, which over an empty
+    // canvas reads as a black screen. Dividing it out first means the blend
+    // reproduces the original colour exactly and only the *coverage* varies.
+    float3 keyed = col / max(key, 0.0025);
+    col = lerp(col, min(keyed, float3(1.0, 1.0, 1.0)), pAlphaMode);
+
+    float alpha = lerp(1.0, key, pAlphaMode);
+    return float4(encodeSRGB(col), alpha * pOpacity);
+}
+
+technique Bright    { pass { vertex_shader = VSDefault(v); pixel_shader = PSBright(v);    } }
+technique BlurH     { pass { vertex_shader = VSDefault(v); pixel_shader = PSBlurH(v);     } }
+technique BlurV     { pass { vertex_shader = VSDefault(v); pixel_shader = PSBlurV(v);     } }
+technique Composite { pass { vertex_shader = VSDefault(v); pixel_shader = PSComposite(v); } }
+technique Present   { pass { vertex_shader = VSDefault(v); pixel_shader = PSPresent(v);   } }

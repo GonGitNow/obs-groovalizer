@@ -1,0 +1,35 @@
+{
+    "dependencies": {
+        "obs-studio": {
+            "version": "31.0.0",
+            "repository": "https://github.com/obsproject/obs-studio.git",
+            "branch": "master",
+            "hash": "0000000000000000000000000000000000000000"
+        },
+        "prebuilt": {
+            "version": "2024-09-12",
+            "baseUrl": "https://github.com/obsproject/obs-deps/releases/download",
+            "label": "Pre-Built obs-deps",
+            "hashes": {
+                "macos-universal": "",
+                "windows-x64": ""
+            }
+        }
+    },
+    "name": "obs-groovalizer",
+    "displayName": "Groovalizer",
+    "version": "1.0.0",
+    "author": "Groovalizer",
+    "website": "https://groovalizer.com/obs",
+    "email": "support@groovalizer.com",
+    "uuids": {
+        "macosPackage": "ee5a4d6e-0a1b-47a0-9d1f-1b1a0f5c9d21",
+        "macosInstaller": "ee5a4d6e-0a1b-47a0-9d1f-1b1a0f5c9d22",
+        "windowsApp": "ee5a4d6e-0a1b-47a0-9d1f-1b1a0f5c9d23"
+    },
+    "platformConfig": {
+        "macos": {
+            "bundleId": "com.groovalizer.obs-groovalizer"
+        }
+    }
+}

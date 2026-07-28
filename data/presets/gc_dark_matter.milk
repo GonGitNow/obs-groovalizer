@@ -1,0 +1,100 @@
+[preset00]
+fRating=5.000000
+fGammaAdj=1.000000
+fDecay=0.970000
+fVideoEchoZoom=1.000000
+fVideoEchoAlpha=0.000000
+nVideoEchoOrientation=0
+nWaveMode=0
+bAdditiveWaves=0
+bWaveDots=1
+bWaveThick=1
+bModWaveAlphaByVolume=0
+bMaximizeWaveColor=0
+bTexWrap=1
+bDarkenCenter=0
+bRedBlueStereo=0
+bBrighten=0
+bDarken=1
+bSolarize=0
+bInvert=0
+fWaveAlpha=0.300000
+fWaveScale=0.600000
+fWaveSmoothing=0.800000
+fWaveParam=0.000000
+fModWaveAlphaStart=0.750000
+fModWaveAlphaEnd=0.950000
+fWarpAnimSpeed=0.800000
+fWarpScale=1.000000
+fZoomExponent=1.000000
+fShader=0.000000
+zoom=1.000000
+rot=0.000000
+cx=0.500000
+cy=0.500000
+dx=0.000000
+dy=0.000000
+warp=0.200000
+sx=1.000000
+sy=1.000000
+wave_r=0.400000
+wave_g=0.200000
+wave_b=0.600000
+wave_x=0.500000
+wave_y=0.500000
+ob_size=0.012000
+ob_r=0.150000
+ob_g=0.050000
+ob_b=0.250000
+ob_a=0.900000
+ib_size=0.008000
+ib_r=0.100000
+ib_g=0.030000
+ib_b=0.200000
+ib_a=0.700000
+nMotionVectorsX=16.000000
+nMotionVectorsY=12.000000
+mv_dx=0.000000
+mv_dy=0.000000
+mv_l=1.500000
+mv_r=0.300000
+mv_g=0.150000
+mv_b=0.500000
+mv_a=0.100000
+b1n=0.000000
+b1x=1.000000
+b2n=0.000000
+b2x=1.000000
+b3n=0.000000
+b3x=1.000000
+b1ed=0.250000
+per_frame_init_1=smooth_bass = 1; smooth_treb = 1; beat_energy = 0; last_beat = 0; threshold = 1.4;
+per_frame_1=smooth_bass = smooth_bass * 0.90 + bass * 0.10;
+per_frame_2=smooth_treb = smooth_treb * 0.90 + treb * 0.10;
+per_frame_3=vol = (bass + mid + treb) / 3;
+per_frame_4=beat = above(bass, threshold) * above(time - last_beat, 0.25);
+per_frame_5=last_beat = if(beat, time, last_beat);
+per_frame_6=threshold = if(beat, bass + 0.4, threshold * 0.996 + 1.3 * 0.004);
+per_frame_7=beat_energy = beat_energy * 0.95 + beat * 0.3;
+per_frame_8=zoom = 1.002 + 0.002 * smooth_bass;
+per_frame_9=rot = 0.0005 * sin(time * 0.08);
+per_frame_10=decay = 0.965 + 0.015 * min(1, vol * 0.4);
+per_frame_11=mv_a = 0.06 + 0.06 * smooth_bass;
+per_frame_12=wave_r = 0.3 + 0.1 * sin(time * 0.15);
+per_frame_13=wave_g = 0.15 + 0.05 * sin(time * 0.15 + 1.5);
+per_frame_14=wave_b = 0.5 + 0.15 * sin(time * 0.15 + 3.0);
+per_frame_15=wave_a = 0.2 + 0.1 * vol;
+per_frame_16=q1 = smooth_bass; q2 = smooth_treb; q3 = beat_energy; q4 = vol; q5 = time;
+per_frame_17=q6 = sin(time * 0.07); q7 = cos(time * 0.07); q8 = sin(time * 0.11); q9 = cos(time * 0.11);
+per_pixel_1=gx1 = 0.5 + 0.25 * q6; gy1 = 0.5 + 0.25 * q7;
+per_pixel_2=gx2 = 0.5 + 0.25 * q8; gy2 = 0.5 + 0.25 * q9;
+per_pixel_3=px = x; py = y;
+per_pixel_4=d1x = px - gx1; d1y = py - gy1;
+per_pixel_5=dist1 = sqrt(d1x * d1x + d1y * d1y) + 0.01;
+per_pixel_6=d2x = px - gx2; d2y = py - gy2;
+per_pixel_7=dist2 = sqrt(d2x * d2x + d2y * d2y) + 0.01;
+per_pixel_8=pull = 0.003 + 0.002 * q1;
+per_pixel_9=dx = pull * d1x / (dist1 * dist1 + 0.05) + pull * d2x / (dist2 * dist2 + 0.05);
+per_pixel_10=dy = pull * d1y / (dist1 * dist1 + 0.05) + pull * d2y / (dist2 * dist2 + 0.05);
+per_pixel_11=dx = min(0.01, max(-0.01, dx));
+per_pixel_12=dy = min(0.01, max(-0.01, dy));
