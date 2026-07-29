@@ -53,6 +53,13 @@ if(GROOVE_COMPILE_ONLY)
   set(OBS_SOURCE_DIR $ENV{OBS_SOURCE_DIR})
   target_include_directories(obs-groovalizer PRIVATE
     ${OBS_SOURCE_DIR}/libobs ${CMAKE_CURRENT_BINARY_DIR}/obsconfig)
+  # libobs/util/threading.h includes <pthread.h> with no platform guard. On
+  # Windows that resolves to the pthreads-win32 shim OBS vendors, which is not
+  # on the default include path.
+  if(WIN32)
+    target_include_directories(obs-groovalizer PRIVATE
+      ${OBS_SOURCE_DIR}/deps/w32-pthreads)
+  endif()
   # libobs headers reach for <simde/...> on the SIMD paths. Optional here:
   # where it is absent the few affected headers still parse.
   find_path(SIMDE_INCLUDE_DIR simde/x86/sse2.h

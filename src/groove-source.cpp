@@ -599,8 +599,12 @@ static void groove_video_render(void* data, gs_effect_t*) {
         const std::string why = gs->milk->status();
         if (!why.empty()) blog(LOG_WARNING, "[groovalizer] %s", why.c_str());
     }
-#endif
+    // Nothing to draw without a scene effect. The milk backend supplies its own
+    // image, so it is the one case where a missing scene effect is fine.
     if (!gs->use_milk && !gs->scene_effect) return;
+#else
+    if (!gs->scene_effect) return;
+#endif
 
     const uint32_t cx = gs->cx, cy = gs->cy;
 

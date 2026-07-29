@@ -88,6 +88,13 @@
   #if defined(__APPLE__)
     #include <OpenGL/gl3.h>
   #else
+    // Without this, <GL/glext.h> declares the enums and the function-pointer
+    // typedefs but NOT the prototypes, so every post-1.1 call is an
+    // undeclared identifier even though libGL exports it. Linux only —
+    // defining it is meaningless on the other two.
+    #ifndef GL_GLEXT_PROTOTYPES
+    #define GL_GLEXT_PROTOTYPES 1
+    #endif
     #include <GL/gl.h>
     #include <GL/glext.h>
   #endif
