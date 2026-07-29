@@ -21,7 +21,7 @@ on:
 env:
   # Must match the OBS you target: libobs struct layouts are not stable across
   # majors, and a mismatch crashes on plugin load rather than failing to build.
-  OBS_TAG: '31.0.0'
+  OBS_TAG: '32.1.2'
 
 jobs:
   compile:
