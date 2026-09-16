@@ -63,6 +63,24 @@ Finding libobs:
 - Linux — `~/.config/obs-studio/plugins/obs-groovalizer/`
 - Windows — `%APPDATA%/obs-studio/plugins/obs-groovalizer/`
 
+### Distributing a build
+
+CI produces the thing you hand to someone. Every push to `main`, and any
+`workflow_dispatch` run, uploads two artifacts from `.github/workflows/build.yml`:
+
+| Artifact | Contents |
+|---|---|
+| `obs-groovalizer-macos-scenes` | `obs-groovalizer.plugin` with the 22 scenes, universal, ad-hoc signed |
+| `obs-groovalizer-macos-milkdrop` | the same plus the `.milk` backend, with libprojectM (built from master) bundled inside |
+
+Each zip also carries the preset pack as a loose `presets/` folder and
+[`docs/SETUP-macOS.md`](docs/SETUP-macOS.md), written for the person receiving
+it. Pushing a `v*` tag attaches both zips to a GitHub release.
+
+The assembly is `scripts/package-macos.sh`, which also runs from any Mac with a
+finished build. Packages are ad-hoc signed, not notarised, so the recipient
+clears the quarantine flag once; the guide has the command.
+
 ### Build status, honestly
 
 | Configuration | State |

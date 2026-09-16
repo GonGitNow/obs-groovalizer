@@ -98,11 +98,35 @@ jobs:
       - name: Compile
         run: cmake --build build --config Release
 
-  # The generated-scene path has no libprojectM dependency at all, so it can be
-  # built and linked for real. This is the configuration most users install.
-  link-macos:
-    name: link (macOS, scenes only)
+  # ── Distributable macOS packages ──────────────────────────────────────────
+  # The compile matrix above proves the code compiles. These jobs produce the
+  # thing you actually hand to someone: a complete obs-groovalizer.plugin with
+  # its shaders, locale and presets inside, zipped with the preset pack and
+  # docs/SETUP-macOS.md by scripts/package-macos.sh.
+  #
+  #   scenes    the generated scenes only, no libprojectM. Small.
+  #   milkdrop  adds the .milk backend. libprojectM is built from master here
+  #             (every tagged release lacks projectm_opengl_render_frame_fbo —
+  #             see CMakeLists.txt) and bundled into Contents/Frameworks, so the
+  #             recipient installs one folder and nothing else.
+  #
+  # Both are universal (arm64 + x86_64) and ad-hoc signed. Not notarised: the
+  # recipient clears the quarantine flag once, which the guide covers. A real
+  # Developer ID signature would slot in after the Package step.
+  package-macos:
+    name: package (macOS, ${{ matrix.variant }})
     runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [scenes, milkdrop]
+    env:
+      OBS_SOURCE_DIR: ${{ github.workspace }}/.deps/obs-studio
+      PM_PREFIX: ${{ github.workspace }}/.deps/projectm-install
+      ARCHS: 'arm64;x86_64'
+      # Oldest macOS the package will load on. Older than anything OBS 32 runs
+      # on, so it never becomes the limiting factor.
+      MIN_MACOS: '12.0'
     steps:
       - uses: actions/checkout@v4
 
@@ -116,14 +140,72 @@ jobs:
 
       - run: brew install simde
 
-      - name: Configure and build
-        env:
-          OBS_SOURCE_DIR: ${{ github.workspace }}/.deps/obs-studio
+      - name: Check out libprojectM
+        if: matrix.variant == 'milkdrop'
+        uses: actions/checkout@v4
+        with:
+          repository: projectM-visualizer/projectm
+          ref: master
+          path: .deps/projectm
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Build libprojectM
+        if: matrix.variant == 'milkdrop'
         run: |
-          cmake -B build -DCMAKE_BUILD_TYPE=Release -DENABLE_MILKDROP=OFF
-          cmake --build build --config Release
+          cmake -S .deps/projectm -B .deps/projectm/build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX="$PM_PREFIX" \
+            -DCMAKE_OSX_ARCHITECTURES="$ARCHS" \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET="$MIN_MACOS" \
+            -DBUILD_SHARED_LIBS=ON \
+            -DBUILD_TESTING=OFF \
+            -DENABLE_PLAYLIST=OFF \
+            -DENABLE_SDL_UI=OFF
+          cmake --build .deps/projectm/build --config Release --parallel "$(sysctl -n hw.ncpu)"
+          cmake --install .deps/projectm/build
+
+      - name: Configure and build
+        run: |
+          if [ "${{ matrix.variant }}" = milkdrop ]; then milk=ON; else milk=OFF; fi
+          cmake -B build -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_OSX_ARCHITECTURES="$ARCHS" \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET="$MIN_MACOS" \
+            -DENABLE_MILKDROP=$milk \
+            -DCMAKE_PREFIX_PATH="$PM_PREFIX"
+          cmake --build build --config Release --parallel "$(sysctl -n hw.ncpu)"
+
+      - name: Package
+        run: scripts/package-macos.sh build ${{ matrix.variant }} dist "$PM_PREFIX"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: obs-groovalizer-macos-scenes
-          path: build/*.plugin
+          name: obs-groovalizer-macos-${{ matrix.variant }}
+          path: dist/*.zip
+          if-no-files-found: error
+
+  # A v* tag turns both packages into a GitHub release.
+  release:
+    name: release
+    needs: package-macos
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: obs-groovalizer-macos-*
+          merge-multiple: true
+          path: dist
+
+      - name: Create or update the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="$GITHUB_REF_NAME"
+          if ! gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$tag" --repo "$GITHUB_REPOSITORY" \
+              --title "Groovalizer $tag" --generate-notes
+          fi
+          gh release upload "$tag" dist/*.zip --repo "$GITHUB_REPOSITORY" --clobber
