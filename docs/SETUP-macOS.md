@@ -36,26 +36,27 @@ applies to both unless it says otherwise.
 ## 1. Install the plugin
 
 1. Quit OBS if it is running.
+
 2. Double-click the zip to unpack it.
+
 3. In Finder press **⇧⌘G** (Go ▸ Go to Folder…), paste this path and press Return:
 
-   ```
-   ~/Library/Application Support/obs-studio/plugins
-   ```
+        ~/Library/Application Support/obs-studio/plugins
 
-   If Finder says the `plugins` folder does not exist, go one level up to
-   `obs-studio` and create a folder named `plugins`.
+    If Finder says the `plugins` folder does not exist, go one level up to
+    `obs-studio` and create a folder named `plugins`.
+
 4. Drag **`obs-groovalizer.plugin`** into that `plugins` folder.
+
 5. macOS flags anything that arrived by download or email as *quarantined* and
-   will silently refuse to load it inside OBS. Clear the flag once. Open
-   **Terminal** (Applications ▸ Utilities ▸ Terminal), paste the line below and
-   press Return:
+    will silently refuse to load it inside OBS. Clear the flag once. Open
+    **Terminal** (Applications ▸ Utilities ▸ Terminal), paste the line below and
+    press Return:
 
-   ```
-   xattr -dr com.apple.quarantine ~/Library/Application\ Support/obs-studio/plugins/obs-groovalizer.plugin
-   ```
+        xattr -dr com.apple.quarantine ~/Library/Application\ Support/obs-studio/plugins/obs-groovalizer.plugin
 
-   It prints nothing when it works.
+    It prints nothing when it works.
+
 6. Start OBS.
 
 To confirm the plugin loaded, open **Help ▸ Log Files ▸ View Current Log** and
@@ -85,21 +86,25 @@ Play something and check that the meter for that source moves in the
 ## 3. Add the visualizer
 
 1. Under *Sources* click **+** ▸ **Groovalizer (Music Visualizer)** ▸ OK.
-   The Properties window opens.
+    The Properties window opens.
+
 2. **Audio Source**: pick the capture source from step 2. Leave it on
-   *(None — idle animation)* only if you want the visuals to drift on their own
-   clock without reacting.
+    *(None — idle animation)* only if you want the visuals to drift on their own
+    clock without reacting.
+
 3. Choose what to draw.
-   - **Visuals ▸ Built-in scenes** (milkdrop build) or simply the **Scene** list
-     (scenes build): pick one of the 22 scenes, then a **Colour Theme**. Choose
-     *Custom* to set your own three colours.
-   - **Visuals ▸ MilkDrop presets (.milk)** (milkdrop build only): pick a
-     **Preset**. The bundled pack is listed as `Groovalizer · <name>`. To add your
-     own collection, set **Preset folder** to any folder of `.milk` files (it is
-     scanned recursively), close the window and reopen it; your files appear
-     under `My presets · <name>`.
+
+    - **Visuals ▸ Built-in scenes** (milkdrop build) or simply the **Scene** list
+      (scenes build): pick one of the 22 scenes, then a **Colour Theme**. Choose
+      *Custom* to set your own three colours.
+    - **Visuals ▸ MilkDrop presets (.milk)** (milkdrop build only): pick a
+      **Preset**. The bundled pack is listed as `Groovalizer · <name>`. To add your
+      own collection, set **Preset folder** to any folder of `.milk` files (it is
+      scanned recursively), close the window and reopen it; your files appear
+      under `My presets · <name>`.
+
 4. Click OK. Move and resize the source like any other; it renders at the
-   Width and Height set in its properties regardless of your canvas size.
+    Width and Height set in its properties regardless of your canvas size.
 
 ### Settings worth knowing
 
