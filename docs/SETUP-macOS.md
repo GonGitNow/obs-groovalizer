@@ -16,10 +16,10 @@ Groovalizer-macOS-milkdrop/
 
 There are two builds of the plugin:
 
-| Build | What it plays | Size |
-|---|---|---|
-| **milkdrop** | 22 built-in scenes **and** MilkDrop `.milk` presets | ~15 MB |
-| **scenes** | the 22 built-in scenes only | ~1 MB |
+| Build | What it plays |
+|---|---|
+| **milkdrop** | the 22 built-in scenes **and** MilkDrop `.milk` presets |
+| **scenes** | the 22 built-in scenes only |
 
 If you were sent presets, you have the **milkdrop** build. Everything below
 applies to both unless it says otherwise.
