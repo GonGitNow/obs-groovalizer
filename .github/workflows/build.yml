@@ -17,6 +17,14 @@ on:
     tags: ['v*']
   pull_request:
   workflow_dispatch:
+    inputs:
+      publish_branch:
+        description: >-
+          Also commit the finished macOS packages to this branch. For
+          environments that can reach github.com over git but not the storage
+          host Actions artifacts are served from.
+        required: false
+        default: ''
 
 env:
   # Must match the OBS you target: libobs struct layouts are not stable across
@@ -183,6 +191,39 @@ jobs:
           name: obs-groovalizer-macos-${{ matrix.variant }}
           path: dist/*.zip
           if-no-files-found: error
+
+  # Manual runs can also drop the packages on a branch, as plain files in an
+  # orphan commit. Artifacts live on a storage host that some networks cannot
+  # reach; a git fetch of github.com almost always works. Force-pushed, so the
+  # branch only ever holds the latest run's packages.
+  publish-branch:
+    name: publish packages to a branch
+    needs: package-macos
+    if: github.event_name == 'workflow_dispatch' && inputs.publish_branch != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: obs-groovalizer-macos-*
+          merge-multiple: true
+          path: dist
+
+      - name: Commit the packages to the branch
+        env:
+          BRANCH: ${{ inputs.publish_branch }}
+        run: |
+          git checkout --orphan "$BRANCH"
+          git rm -rfq .
+          cp dist/*.zip .
+          git add ./*.zip
+          git -c user.name=github-actions -c user.email=github-actions@github.com \
+            commit -q -m "macOS packages built from $GITHUB_SHA"
+          git push --force origin "HEAD:refs/heads/$BRANCH"
+          echo "pushed $(ls *.zip | tr '\n' ' ') to $BRANCH"
 
   # A v* tag turns both packages into a GitHub release.
   release:
